@@ -2,7 +2,7 @@ import java.util.*;
 
 public class MaxFlowDinics {
 	static ArrayList<Edge>[] adj;
-	static int[] dist;
+	static int[] level;
 	
 	public static void main(String[] args) {
 		Scanner stdin = new Scanner(System.in);
@@ -10,7 +10,7 @@ public class MaxFlowDinics {
 		for (int i = 0; i < adj.length; i++) {
 			adj[i] = new ArrayList<Edge>();
 		}
-		dist = new int[6];
+		level = new int[6];
 		
 		// Quick test -- the answer should be 23
 		Edge.addToGraph(adj, 0, 1, 16 );
@@ -26,26 +26,26 @@ public class MaxFlowDinics {
 		
 		System.out.println(maxFlow(0, 5));
 	}
-	
-	static boolean bfs(int s, int t) {
-		Arrays.fill(dist, -1);
+
+	static boolean computeLevelGraph(int s, int t) {
+		Arrays.fill(level, -1);
 		
 		ArrayDeque<Integer> q = new ArrayDeque<>();
-		dist[s] = 0;
+		level[s] = 0;
 		q.offer(s);
 		
 		while (!q.isEmpty()) {
 			int u = q.poll();
 			
 			for (Edge e : adj[u]) {
-				if (dist[e.v] == -1 && e.flow < e.cap) {
+				if (level[e.v] == -1 && e.flow < e.cap) {
 					q.offer(e.v);
-					dist[e.v] = dist[u] + 1;
+					level[e.v] = level[u] + 1;
 				}
 			}
 		}
 		
-		return dist[t] >= 0;
+		return level[t] >= 0;
 	}
 	
 	static long sendFlow(int[] ptr, int u, int t, long f) {
@@ -56,7 +56,7 @@ public class MaxFlowDinics {
 		for (; ptr[u] < adj[u].size(); ptr[u]++) {
 			Edge e = adj[u].get(ptr[u]);
 			
-			if (dist[e.v] == dist[u] + 1 && e.flow < e.cap) {
+			if (level[e.v] == level[u] + 1 && e.flow < e.cap) {
 				long df = sendFlow(ptr, e.v, t, Math.min(f, e.cap - e.flow));
 				
 				if (df > 0) {
@@ -77,7 +77,7 @@ public class MaxFlowDinics {
 		
 		long total = 0;
 		
-		while (bfs(s, t)) {
+		while (computeLevelGraph(s, t)) {
 			while (true) {
 				long flow = sendFlow(new int[adj.length], s, t, Integer.MAX_VALUE);
 				if (flow == 0)
@@ -88,6 +88,32 @@ public class MaxFlowDinics {
 		}
 		
 		return total;
+	}
+	
+	static void minCutSet(int s, int t) {
+		boolean[] seen = new boolean[adj.length];
+		ArrayDeque<Integer> stk = new ArrayDeque<>();
+		stk.push(s);
+		seen[s] = true;
+		
+		while (!stk.isEmpty()) {
+			int u = stk.pop();
+			
+			for (Edge e : adj[u]) {
+				if (!seen[e.v] && e.cap - e.flow > 0) {
+					seen[e.v] = true;
+					stk.push(e.v);
+				}
+			}
+		}
+		
+		for (int u = 0; u < adj.length; u++) {
+			for (Edge e : adj[u]) {
+				if (seen[e.u] && !seen[e.v]) {
+					System.out.printf("%d %d%n", e.u + 1, e.v + 1);
+				}
+			}
+		}
 	}
 	
 	private static class Edge {
